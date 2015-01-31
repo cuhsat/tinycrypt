@@ -22,91 +22,96 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+import base64
+import binascii
 import os
+import re
 import sys
 
-from hashlib import sha1
-from urllib2 import URLError, urlopen
+try:
+    from urllib.error import URLError
+    from urllib.request import urlopen
+except:
+    from urllib2 import URLError, urlopen # Python 2 fallback
 
 
-__all__, __version__ = ["TinyCrypt"], "0.2.0"
+try:
+    from Crypto.Cipher import AES
+    from Crypto.Hash import SHA512
+except ImportError:
+    sys.exit("Requires PyCrypto (https://github.com/dlitz/pycrypto)")
 
 
-URL = (
-    "http://tinyurl.com/",
-    "create.php?alias=%s&url=https://www.google.com%%3F",
-    "referer="
-)
+__all__, __version__ = ["TinyCrypt"], "0.2.1"
 
 
 class TinyCrypt(object):
     """
-    Using TinyURL as a key/value storage for encrypted messages.
+    Uses TinyURL as a key/value storage for encrypted messages.
     """
-    SALT = "Adjust this value to your own salt !"
+    SALT = b"Use Your Own Salt"
 
-    def __init__(self, url, action, delimiter):
+    def __init__(self, decoy="http://test.com%%3Fdata=%s"):
         """
-        Setting up the URLs.
+        Sets the decoy URL.
         """
-        self.GET = url
-        self.SET = url + action + delimiter
-        self.DEL = delimiter
+        self.decoy = decoy
 
     def __repr__(self):
         """
-        Returns TODO.
+        Returns the protocol version.
         """
         return "TinyCrypt " + __version__
 
-    def __alias(self, key):
+    def __hash(self, key):
         """
-        Uses the SHA(1) hash algorithm.
+        Returns the SHA512 hash and the alias of the key.
         """
-        return sha1(TinyCrypt.SALT + key).hexdigest()
+        key = SHA512.new(TinyCrypt.SALT + key.encode("utf-8")).digest()
 
-    def __crypt(self, key, data):
+        return (key, binascii.hexlify(key)[:40].decode("ascii"))
+
+    def __encrypt(self, key, data):
         """
-        Uses the RC4 stream cipher with a reversed S-Box.
+        Returns the AES (CFB8) encrypted data.
         """
-        j, sbox = 0, range(256)[::-1]
+        return AES.new(key[:32], AES.MODE_CFB, key[-16:]).encrypt(data)
 
-        for i in range(256)[::-1]:
-            j = (j + sbox[i] + ord(key[i % len(key)])) % 256
-            sbox[i], sbox[j] = sbox[j], sbox[i]
-
-        i, j, stream = 0, 0, []
-
-        for byte in data:
-            i = (i + 1) % 256
-            j = (j + sbox[i]) % 256
-            sbox[i], sbox[j] = sbox[j], sbox[i]
-            stream.append(chr(ord(byte) ^ sbox[(sbox[i] + sbox[j]) % 256]))
-
-        return "".join(stream)
+    def __decrypt(self, key, data):
+        """
+        Returns the AES (CFB8) decrypted data.
+        """
+        return AES.new(key[:32], AES.MODE_CFB, key[-16:]).decrypt(data)
 
     def push(self, key, message):
         """
         Pushes a message.
         """
-        k = self.__alias(key)
-        v = self.__crypt(key, message)
+        key, alias = self.__hash(key)
 
-        urlopen((self.SET % k) + v.encode("hex"))
+        data = self.__encrypt(key, message)
+        data = base64.urlsafe_b64encode(data).decode("ascii")
+
+        url = "http://tinyurl.com/create.php?alias=%s&url=" + self.decoy
+        urlopen(url % (alias, data))
 
     def pull(self, key):
         """
         Returns a previously pushed message or None.
         """
         try:
-            k = self.__alias(key)
-            v = urlopen(self.GET + k).geturl()
-            v = v.split(self.DEL, 1)[-1]
+            key, alias = self.__hash(key)
 
-            return self.__crypt(key, v.decode("hex"))
+            url = urlopen("http://tinyurl.com/" + alias).geturl()
 
+            data = re.split("^.+data=", url, 1)[1]
+            data = base64.urlsafe_b64decode(data)
+
+            return self.__decrypt(key, data).decode("utf-8")
+
+        # No message found else error
         except URLError as ex:
-            if not ex.code == 404:
+            if getattr(ex, "code", None) != 404:
                 raise ex
 
 
@@ -121,7 +126,7 @@ def usage(text, *args):
 
             # Color description
             if re.match("^.* Version \d+\.\d+\.\d+$", line):
-                line = line.replace("version", "version\x1B[34;1m")
+                line = line.replace("Version", "Version\x1B[34;1m")
                 line = "\x1B[39;1m%s\x1B[0m" % line
 
             # Color list titles
@@ -136,14 +141,14 @@ def usage(text, *args):
         print(line)
 
 
-def main(script, key="--help", *args):
+def main(script, arg="--help", *args):
     """
-        ____________                  _______                       ___
+        _________ __                  _______                       ___
        /__   ___/__/_______ ___   ___/  ____/________   ___________/  /__
          /  /  /  /  ___   /  /  /  /  /   /  ___/  /  /  /  ___  /  ___/
-        /  /  /  /  /  /  /  /__/  /  /___/  /  /  /__/  /  /__/ /  /__  
-       /__/  /__/__/  /__/\____   /______/__/   \____   /  _____/\____/  
-                         /_______/             /_______/__/               
+        /  /  /  /  /  /  /  /__/  /  /___/  /  /  /__/  /  /__/ /  /__
+       /__/  /__/__/  /__/\____   /______/__/   \____   /  _____/\____/
+                         /_______/             /_______/__/
       Version %s
 
     Usage:
@@ -157,36 +162,28 @@ def main(script, key="--help", *args):
     Report bugs to <christian@uhsat.de>
     """
     try:
-        if key in ("/?", "-h", "--help"):
-            usage(main.__doc__, __version__, os.path.basename(script))
-            return
+        script = os.path.basename(script)
 
-        elif key in ("-l", "--license"):
+        if arg in ("/?", "-h", "--help"):
+            usage(main.__doc__, __version__, script)
+
+        elif arg in ("-l", "--license"):
             print(__doc__.strip())
-            return
 
-        elif key in ("-v", "--version"):
+        elif arg in ("-v", "--version"):
             print("TinyCrypt " + __version__)
-            return
 
-        tiny = TinyCrypt(*URL)
+        else:
+            tinycrypt = TinyCrypt()
+            message = tinycrypt.pull(arg)
 
-        enc = sys.getdefaultencoding()
-        key = key.decode(enc)
-
-        message = tiny.pull(key)
-
-        if message:
-            print(message.encode(enc))
-
-        elif args:
-            message = " ".join(args)
-            message = message.decode(enc)
-
-            tiny.push(key, message)
+            if message:
+                print(message)
+            elif args:
+                tinycrypt.push(arg, " ".join(args))
 
     except Exception as ex:
-        return "Error: %s" % ex
+        return "%s error: %s" % (script, ex)
 
 
 if __name__ == "__main__":
