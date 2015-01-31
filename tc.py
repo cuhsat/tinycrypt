@@ -42,7 +42,7 @@ except ImportError:
     sys.exit("Requires PyCrypto (https://github.com/dlitz/pycrypto)")
 
 
-__all__, __version__ = ["TinyCrypt"], "0.2.1"
+__all__, __version__ = ["TinyCrypt"], "0.2.2"
 
 
 class TinyCrypt(object):
@@ -51,11 +51,11 @@ class TinyCrypt(object):
     """
     SALT = b"Use Your Own Salt"
 
-    def __init__(self, decoy="http://test.com%%3Fdata=%s"):
+    def __init__(self, decoy="http://test.com"):
         """
         Sets the decoy URL.
         """
-        self.decoy = decoy
+        self.decoy = decoy + "%%3Fdata=%s"
 
     def __repr__(self):
         """
