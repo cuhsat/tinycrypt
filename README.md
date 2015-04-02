@@ -1,4 +1,6 @@
-# TinyCrypt 0.2.2 ![Build](https://travis-ci.org/cuhsat/tinycrypt.svg)
+# Tinycrypt ![Build](https://travis-ci.org/cuhsat/tinycrypt.svg)
+TinyCrypt `0.2.2`
+
 Using TinyURL as a key/value storage for encrypted messages.
 
 ## Usage
