@@ -1,5 +1,7 @@
 # Tinycrypt ![Build](https://travis-ci.org/cuhsat/tinycrypt.svg)
-TinyCrypt `0.2.2`
+
+**This Repository is deprecated by its successor**
+**[TinyThread](https://github.com/cuhsat/tinythread).**
 
 Using TinyURL as a key/value storage for encrypted messages.
 
