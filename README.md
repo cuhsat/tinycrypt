@@ -1,4 +1,4 @@
-# Tinycrypt ![Build](https://travis-ci.org/cuhsat/tinycrypt.svg)
+# TinyCrypt ![Build](https://travis-ci.org/cuhsat/tinycrypt.svg)
 
 **This Repository is deprecated by its successor**
 **[TinyThread](https://github.com/cuhsat/tinythread).**
@@ -21,6 +21,6 @@ $ tc.py SecretKey
 ```
 
 ## License
-TinyThread is released under the terms of the [MIT License](LICENSE).
+TinyCrypt is released under the terms of the [MIT License](LICENSE).
 
 Christian Uhsat / <christian@uhsat.de>
