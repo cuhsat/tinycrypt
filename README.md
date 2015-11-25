@@ -22,5 +22,3 @@ $ tc.py SecretKey
 
 ## License
 TinyCrypt is released under the terms of the [MIT License](LICENSE).
-
-[Christian Uhsat](mailto:christian@uhsat.de)
