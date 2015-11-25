@@ -1,4 +1,4 @@
-# TinyCrypt ![Build](https://travis-ci.org/cuhsat/tinycrypt.svg)
+# TinyCrypt
 
 **This Repository is deprecated by its successor**
 **[TinyThread](https://github.com/cuhsat/tinythread).**
