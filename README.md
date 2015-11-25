@@ -21,6 +21,6 @@ $ tc.py SecretKey
 ```
 
 ## License
-TinyCrypt is released under the terms of the MIT License (MIT).
+TinyThread is released under the terms of the [MIT License](LICENSE).
 
-Copyright (c) 2015 Christian Uhsat <christian@uhsat.de>
+Christian Uhsat / <christian@uhsat.de>
