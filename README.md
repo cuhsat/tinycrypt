@@ -3,7 +3,7 @@
 **This Repository is deprecated by its successor**
 **[TinyThread](https://github.com/cuhsat/tinythread).**
 
-Using TinyURL as a key/value storage for encrypted messages.
+(Ab)using TinyURL as a key/value storage for encrypted messages.
 
 ## Usage
 ```
